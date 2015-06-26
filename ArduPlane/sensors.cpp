@@ -57,6 +57,43 @@ void Plane::read_airspeed(void)
     if (ahrs.airspeed_estimate(&aspeed)) {
         smoothed_airspeed = smoothed_airspeed * 0.8f + aspeed * 0.2f;
     }
+
+    check_for_airspeed_hardware_failure();
+}
+
+void Plane::check_for_airspeed_hardware_failure(void)
+{
+    if (!ahrs.airspeed_sensor_enabled() || (control_mode != AUTO)) {
+        return;
+    }
+
+    static uint32_t time_since_after_takeoff = 0;
+    if (flight_stage == AP_SpdHgtControl::FLIGHT_TAKEOFF) {
+        time_since_after_takeoff = hal.scheduler->millis();
+    }
+    else if (is_flying() && (hal.scheduler->millis() > (time_since_after_takeoff + 5000))) {
+        // >5 seconds after takeoff completes
+
+        static uint32_t time_since_last_good_airspeed = hal.scheduler->millis();
+        if (airspeed_error_cm < 800) {
+            time_since_last_good_airspeed = hal.scheduler->millis();
+        }
+        // check if guidance is trying to prevent a stall by driving us into the ground
+        else if (hal.scheduler->millis() > (time_since_last_good_airspeed + 3000) && // seconds of bad airspeed
+            (SpdHgt_Controller->get_pitch_demand() <= -500) && // if trying to dive downward 5deg
+            (SpdHgt_Controller->get_throttle_demand() >= aparm.throttle_max.get()) && // if driving the motor to gain speed
+            (ahrs.groundspeed() > aparm.throttle_cruise * 1.5f) &&
+            (auto_state.sink_rate > 2))  { // if diving down
+
+            // Bad airspeed/pitot tube detected. Check param for behavior, maybe a bitmask?
+
+            // param == 0: do nothing
+            // param & 0x1: airspeed.disable();
+            // param & 0x2: _use.set_and_save(0) and/or _enable.set_and_save(0)
+            // param & 0x4: set_mode(RTL)
+            // param & 0x8: ????????
+        }
+    }
 }
 
 void Plane::zero_airspeed(bool in_startup)

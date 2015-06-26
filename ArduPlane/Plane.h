@@ -797,6 +797,7 @@ private:
     void init_rangefinder(void);
     void read_rangefinder(void);
     void read_airspeed(void);
+    void check_for_airspeed_hardware_failure(void);
     void zero_airspeed(bool in_startup);
     void read_battery(void);
     void read_receiver_rssi(void);
