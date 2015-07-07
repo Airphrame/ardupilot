@@ -75,7 +75,7 @@ void Plane::check_for_airspeed_hardware_failure(void)
         // >5 seconds after takeoff completes
 
         static uint32_t time_since_last_good_airspeed = hal.scheduler->millis();
-        if (airspeed_error_cm < 800) {
+        if (fabs(airspeed_error_cm) < 500) {
             time_since_last_good_airspeed = hal.scheduler->millis();
         }
         // check if guidance is trying to prevent a stall by driving us into the ground
