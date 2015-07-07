@@ -291,6 +291,7 @@ struct PACKED log_Nav_Tuning {
     int16_t airspeed_cm;
     float   altitude;
     uint32_t groundspeed_cm;
+    float airspeed_error_cm;
 };
 
 // Write a navigation tuning packe
@@ -306,7 +307,8 @@ void Plane::Log_Write_Nav_Tuning()
         altitude_error_cm   : (int16_t)altitude_error_cm,
         airspeed_cm         : (int16_t)airspeed.get_airspeed_cm(),
         altitude            : barometer.get_altitude(),
-        groundspeed_cm      : (uint32_t)(gps.ground_speed()*100)
+        groundspeed_cm      : (uint32_t)(gps.ground_speed()*100),
+        airspeed_error_cm   : airspeed_error_cm
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
@@ -476,7 +478,7 @@ static const struct LogStructure log_structure[] PROGMEM = {
     { LOG_CTUN_MSG, sizeof(log_Control_Tuning),     
       "CTUN", "Qcccchhf",    "TimeUS,NavRoll,Roll,NavPitch,Pitch,ThrOut,RdrOut,AccY" },
     { LOG_NTUN_MSG, sizeof(log_Nav_Tuning),         
-      "NTUN", "QCfccccfI",   "TimeUS,Yaw,WpDist,TargBrg,NavBrg,AltErr,Arspd,Alt,GSpdCM" },
+      "NTUN", "QCfccccfIf",   "TimeUS,Yaw,WpDist,TargBrg,NavBrg,AltErr,Arspd,Alt,GSpdCM,AE" },
     { LOG_SONAR_MSG, sizeof(log_Sonar),             
       "SONR", "QffffBBf",   "TimeUS,DistCM,Volt,BaroAlt,GSpd,Thr,Cnt,Corr" },
     { LOG_ARM_DISARM_MSG, sizeof(log_Arm_Disarm),
