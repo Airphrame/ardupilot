@@ -67,23 +67,31 @@ void Plane::check_for_airspeed_hardware_failure(void)
         return;
     }
 
-    static uint32_t time_since_after_takeoff = 0;
-    if (flight_stage == AP_SpdHgtControl::FLIGHT_TAKEOFF) {
+    static uint32_t time_since_after_takeoff = hal.scheduler->millis();
+    if ((flight_stage == AP_SpdHgtControl::FLIGHT_TAKEOFF) ||
+            !is_flying()) {// possible problem: this uses airspeed so it may lie to us and be false
         time_since_after_takeoff = hal.scheduler->millis();
     }
-    else if (is_flying() && (hal.scheduler->millis() > (time_since_after_takeoff + 5000))) {
+    else if (hal.scheduler->millis() - time_since_after_takeoff > 5000) {
         // >5 seconds after takeoff completes
 
+        // start off assuming you have good airspeed
         static uint32_t time_since_last_good_airspeed = hal.scheduler->millis();
+
         if (fabs(airspeed_error_cm) < 500) {
+            // error within 5m/s
             time_since_last_good_airspeed = hal.scheduler->millis();
         }
         // check if guidance is trying to prevent a stall by driving us into the ground
-        else if (hal.scheduler->millis() > (time_since_last_good_airspeed + 3000) && // seconds of bad airspeed
-            (SpdHgt_Controller->get_pitch_demand() <= -500) && // if trying to dive downward 5deg
-            (SpdHgt_Controller->get_throttle_demand() >= aparm.throttle_max.get()) && // if driving the motor to gain speed
-            (ahrs.groundspeed() > aparm.throttle_cruise * 1.5f) &&
-            (auto_state.sink_rate > 2))  { // if diving down
+        else if ((hal.scheduler->millis() - time_since_last_good_airspeed > 3000) // seconds of bad airspeed
+//            && (SpdHgt_Controller->get_pitch_demand() <= -500) // if trying to dive downward 5deg
+//            && (SpdHgt_Controller->get_throttle_demand() >= aparm.throttle_max.get()) // if driving the motor to gain speed
+//            && (ahrs.groundspeed() > aparm.throttle_cruise * 1.5f)
+//            && (auto_state.sink_rate > 2)
+            )  { // if diving down
+
+            gcs_send_text_P(SEVERITY_LOW,PSTR("airspeed error detected!"));
+            airspeed.disable();
 
             // Bad airspeed/pitot tube detected. Check param for behavior, maybe a bitmask?
 
