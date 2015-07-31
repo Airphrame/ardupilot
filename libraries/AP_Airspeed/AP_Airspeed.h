@@ -54,7 +54,6 @@ public:
         _EAS2TAS(1.0f),
         _healthy(false),
         _hil_set(false),
-        _is_trusted(true),
         _last_update_ms(0),
         _trust_hysteresis_timer_ms(0),
         _calibration(parms),
@@ -190,7 +189,6 @@ private:
     float           _EAS2TAS;
     bool		    _healthy:1;
     bool		    _hil_set:1;
-    bool            _is_trusted:1;
     float           _hil_pressure;
     uint32_t        _last_update_ms;
     uint32_t        _trust_hysteresis_timer_ms;

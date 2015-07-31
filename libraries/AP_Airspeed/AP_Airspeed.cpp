@@ -267,10 +267,13 @@ void AP_Airspeed::setHIL(float airspeed, float diff_pressure, float temperature)
 bool AP_Airspeed::self_check(float airspeed_error)
 {
     bool airspeed_looks_ok = (fabs(airspeed_error) < 5);
-    bool perform_RTL = false;
+    bool do_perform_RTL = false;
     // Apply hysteresis to trust decision
 
-    if (_is_trusted) {
+    if (!_enable) {
+        return false;
+    }
+    else if (_use) {
 
         if (airspeed_looks_ok) {
             _trust_hysteresis_timer_ms = hal.scheduler->millis();
@@ -282,35 +285,35 @@ bool AP_Airspeed::self_check(float airspeed_error)
             if (_fail_task & AIRSPEED_FAILURE_TASK_BIT_ALLOW_REENABLE) {
                 // stop using it off but keep listening to it and turn it back on if we detect the problem has been corrected
                 // nothing to do here
-                _is_trusted = false;
+                _use.set(0);
             }
             if (_fail_task & AIRSPEED_FAILURE_TASK_BIT_DISABLE) {
                 // turn off until next boot
-                _is_trusted = false;
-                _enable.set(0);
+                _use.set(0);
             }
             if (_fail_task & AIRSPEED_FAILURE_TASK_BIT_DISABLE_SAVE) {
                 // turn param off in eeprom so we never use it again unless turned on by user
-                _is_trusted = false;
-                _enable.set_and_save(0);
+                _use.set_and_save(0);
             }
             if (_fail_task & AIRSPEED_FAILURE_TASK_BIT_SET_MODE_RTL) {
                 // set_mode(RTL)
                 // Not sure how to do this at this level, must be moved higher
-                perform_RTL = true;
+                // This is a total hack
+                do_perform_RTL = true;
             }
         }
 
-    } else if (_fail_task & AIRSPEED_FAILURE_TASK_BIT_ALLOW_REENABLE) { // not trusted but willing to turn back on
+    } else if ((_trust_hysteresis_timer_ms != 0) && // if we've ever had it enable din the past
+            (_fail_task & AIRSPEED_FAILURE_TASK_BIT_ALLOW_REENABLE) ) { // !_use but willing to turn back on
 
         if (!airspeed_looks_ok) {
             _trust_hysteresis_timer_ms = hal.scheduler->millis();
-        }  else if ((hal.scheduler->millis() - _trust_hysteresis_timer_ms > 3000)) { // 3 seconds of good airspeed
+        }  else if ((hal.scheduler->millis() - _trust_hysteresis_timer_ms > 20000)) { // 3 seconds of good airspeed
             _trust_hysteresis_timer_ms = hal.scheduler->millis();
             hal.console->println_P(PSTR("Airspeed sensor recovered, can be trusted"));
-            _is_trusted = true;
+            _use.set(1);
         }
     }
-    return perform_RTL;
+    return do_perform_RTL;
 }
 
