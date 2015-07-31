@@ -36,6 +36,12 @@ private:
     const AP_Vehicle::FixedWing &aparm;
 };
 
+#define AIRSPEED_FAILURE_TASK_BIT_ALLOW_REENABLE        1
+#define AIRSPEED_FAILURE_TASK_BIT_DISABLE               2
+#define AIRSPEED_FAILURE_TASK_BIT_DISABLE_SAVE          4
+#define AIRSPEED_FAILURE_TASK_BIT_SET_MODE_RTL          8
+#define AIRSPEED_FAILURE_TASK_BIT_DEFAULT               0x01
+
 class AP_Airspeed
 {
 public:
@@ -48,7 +54,9 @@ public:
         _EAS2TAS(1.0f),
         _healthy(false),
         _hil_set(false),
+        _is_trusted(true),
         _last_update_ms(0),
+        _trust_hysteresis_timer_ms(0),
         _calibration(parms),
         _last_saved_ratio(0.0f),
         _counter(0),
@@ -162,6 +170,9 @@ public:
                             PITOT_TUBE_ORDER_NEGATIVE =1, 
                             PITOT_TUBE_ORDER_AUTO     =2};
 
+    // check pitot tube sensors and applies fail task on hardware failure detection. Return true to set to RTL mode
+    bool self_check(float airspeed_error);
+
 private:
     AP_Float        _offset;
     AP_Float        _ratio;
@@ -171,6 +182,7 @@ private:
     AP_Int8         _autocal;
     AP_Int8         _tube_order;
     AP_Int8         _skip_cal;
+    AP_Int8         _fail_task;
     float           _raw_airspeed;
     float           _airspeed;
     float			_last_pressure;
@@ -178,14 +190,18 @@ private:
     float           _EAS2TAS;
     bool		    _healthy:1;
     bool		    _hil_set:1;
+    bool            _is_trusted:1;
     float           _hil_pressure;
     uint32_t        _last_update_ms;
+    uint32_t        _trust_hysteresis_timer_ms;
 
     Airspeed_Calibration _calibration;
     float _last_saved_ratio;
     uint8_t _counter;
 
     float get_pressure(void);
+
+    bool airspeed_looks_abnormal(void);
 
     AP_Airspeed_Analog analog;
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
