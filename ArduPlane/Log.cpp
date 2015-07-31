@@ -308,7 +308,7 @@ void Plane::Log_Write_Nav_Tuning()
         airspeed_cm         : (int16_t)airspeed.get_airspeed_cm(),
         altitude            : barometer.get_altitude(),
         groundspeed_cm      : (uint32_t)(gps.ground_speed()*100),
-        airspeed_error_cm   : airspeed_error_cm
+        airspeed_error_cm   : airspeed_error * 100
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
