@@ -204,6 +204,53 @@ void AP_L1_Control::prefer_turn_into_wind(float &Nu2)
 
 }
 
+Location AP_L1_Control::adjust_wind(const Location &next_WP, const Vector2f &groundspeed_vector)
+{
+    float airspeed;
+    if (!_ahrs.airspeed_estimate(&airspeed)) {
+        return next_WP;
+    }
+    float turn_rate_dps = degrees(GRAVITY_MSS*tanf(radians(50))/airspeed);
+    float ground_course_deg = degrees(atan2f(-groundspeed_vector.y, -groundspeed_vector.x));
+    float course_change_deg = wrap_180_cd(ground_course_deg*100 - _target_bearing_cd*0.01f)*0.01f;
+    float turn_time = course_change_deg / turn_rate_dps;
+    Vector3f wind = _ahrs.wind_estimate();
+    Location adjusted_WP = next_WP;
+    location_offset(adjusted_WP, -wind.x * turn_time, -wind.y * turn_time);
+    return adjusted_WP;
+}
+
+
+void AP_L1_Control::check_into_wind_decision(float &Nu2, const Location &prev_WP, const Location &next_WP, const Vector2f &groundspeed_vector)
+{
+    if (fabsf(degrees(Nu2)) > 90) {
+
+        Location next_WP_wind = adjust_wind(next_WP, groundspeed_vector);
+
+//        // make a copy of the next_WP and offset it's location by how much it would have moved if the wind pushed it as we traveled toward it
+//        float waypoint_wind_offset = groundSpeed * get_distance(current_loc, next_WP);
+//        //float waypoint_wind_offset = _L1_dist * get_distance(current_loc, next_WP);
+//        Vector3f wind_dist_offset = _ahrs.wind_estimate();
+//        struct Location _next_WP_wind = next_WP;
+//        location_offset(_next_WP_wind, wind_raw.y * waypoint_wind_offset, wind_raw.x * waypoint_wind_offset);
+
+        // crunch the numbers with an offsetted waypoint pushed by the wind
+        Vector2f ABwind = location_diff(prev_WP, next_WP_wind);
+        if (ABwind.length() < 1.0e-6f) {
+            // if the distance is small then don't bother trying to optimize turn direction
+            return;
+        }
+        ABwind.normalize();
+        float xtrackVel_wind = groundspeed_vector % ABwind; // Velocity cross track
+        float ltrackVel_wind = groundspeed_vector * ABwind; // Velocity along track
+        float Nu2_wind = atan2f(xtrackVel_wind,ltrackVel_wind);
+        if (Nu2 * Nu2_wind < 0) {
+            // optimum turn is opposite sign (durection) than currently planned turn. Switch it.
+            Nu2 = -Nu2;
+        }
+    }
+}
+
 /**
    prevent indecision in our turning by using our previous turn
    decision if we are in a narrow angle band pointing away from the
@@ -229,7 +276,7 @@ void AP_L1_Control::_prevent_indecision(float &Nu)
 void AP_L1_Control::update_waypoint(const struct Location &prev_WP, const struct Location &next_WP)
 {
 
-	struct Location _current_loc;
+    struct Location _current_loc;
 	float Nu;
 	float xtrackVel;
 	float ltrackVel;
@@ -258,8 +305,8 @@ void AP_L1_Control::update_waypoint(const struct Location &prev_WP, const struct
 	// Calculate the L1 length required for specified period
 	// 0.3183099 = 1/1/pipi
 	_L1_dist = 0.3183099f * _L1_damping * _L1_period * groundSpeed;
-	
-	// Calculate the NE position of WP B relative to WP A
+
+    // Calculate the NE position of WP B relative to WP A
     Vector2f AB = location_diff(prev_WP, next_WP);
 	
 	// Check for AB zero length and track directly to the destination
@@ -270,7 +317,7 @@ void AP_L1_Control::update_waypoint(const struct Location &prev_WP, const struct
             AB = Vector2f(cosf(_ahrs.yaw), sinf(_ahrs.yaw));
         }
 	}
-	AB.normalize();
+    AB.normalize();
 
 	// Calculate the NE position of the aircraft relative to WP A
     Vector2f A_air = location_diff(prev_WP, _current_loc);
@@ -293,12 +340,15 @@ void AP_L1_Control::update_waypoint(const struct Location &prev_WP, const struct
 		_nav_bearing = atan2f(-A_air_unit.y , -A_air_unit.x); // bearing (radians) from AC to L1 point
 
 	} else { //Calc Nu to fly along AB line
-			
+
 		//Calculate Nu2 angle (angle of velocity vector relative to line connecting waypoints)
 		xtrackVel = _groundspeed_vector % AB; // Velocity cross track
 		ltrackVel = _groundspeed_vector * AB; // Velocity along track
 		float Nu2 = atan2f(xtrackVel,ltrackVel);
-		prefer_turn_into_wind(Nu2);
+
+
+		check_into_wind_decision(Nu2, prev_WP, next_WP, _groundspeed_vector);
+		//prefer_turn_into_wind(Nu2);
 
 		//Calculate Nu1 angle (Angle to L1 reference point)
 		float xtrackErr = A_air % AB;

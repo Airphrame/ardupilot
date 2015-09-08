@@ -110,6 +110,9 @@ private:
 
     void prefer_turn_into_wind(float &Nu2);
 
+    void check_into_wind_decision(float &Nu2, const Location &prev_WP, const Location &next_WP, const Vector2f &groundspeed_vector);
+    Location adjust_wind(const Location &next_WP, const Vector2f &groundspeed_vector);
+
 };
 
 
