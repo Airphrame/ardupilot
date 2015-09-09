@@ -243,9 +243,9 @@ void AP_L1_Control::check_into_wind_decision(float &Nu2, const Location &prev_WP
         ABwind.normalize();
         float xtrackVel_wind = groundspeed_vector % ABwind; // Velocity cross track
         float ltrackVel_wind = groundspeed_vector * ABwind; // Velocity along track
-        float Nu2_wind = atan2f(xtrackVel_wind,ltrackVel_wind);
+        float Nu2_wind = atan2f(-xtrackVel_wind,-ltrackVel_wind);
         if (Nu2 * Nu2_wind < 0) {
-            // optimum turn is opposite sign (durection) than currently planned turn. Switch it.
+            // optimum turn is opposite sign (direction) than currently planned turn. Switch it.
             Nu2 = -Nu2;
         }
     }
