@@ -225,8 +225,14 @@ void AP_L1_Control::check_into_wind_decision(float &Nu2, const Location &prev_WP
 {
     if (fabsf(degrees(Nu2)) > 90) {
 
+        static Location last_loc;
         Location next_WP_wind = adjust_wind(next_WP, groundspeed_vector);
 
+        if (last_loc.lat != next_WP_wind.lat &&
+            last_loc.lng != next_WP_wind.lng) {
+            last_loc = next_WP_wind;
+            Debug("lat: %.7f, lng: %.7f", last_loc.lat*1e-7f, last_loc.lng*1e-7f);
+        }
 //        // make a copy of the next_WP and offset it's location by how much it would have moved if the wind pushed it as we traveled toward it
 //        float waypoint_wind_offset = groundSpeed * get_distance(current_loc, next_WP);
 //        //float waypoint_wind_offset = _L1_dist * get_distance(current_loc, next_WP);
@@ -243,7 +249,7 @@ void AP_L1_Control::check_into_wind_decision(float &Nu2, const Location &prev_WP
         ABwind.normalize();
         float xtrackVel_wind = groundspeed_vector % ABwind; // Velocity cross track
         float ltrackVel_wind = groundspeed_vector * ABwind; // Velocity along track
-        float Nu2_wind = atan2f(-xtrackVel_wind,-ltrackVel_wind);
+        float Nu2_wind = atan2f(xtrackVel_wind,ltrackVel_wind);
         if (Nu2 * Nu2_wind < 0) {
             // optimum turn is opposite sign (direction) than currently planned turn. Switch it.
             Nu2 = -Nu2;
@@ -346,7 +352,6 @@ void AP_L1_Control::update_waypoint(const struct Location &prev_WP, const struct
 		ltrackVel = _groundspeed_vector * AB; // Velocity along track
 		float Nu2 = atan2f(xtrackVel,ltrackVel);
 
-
 		check_into_wind_decision(Nu2, prev_WP, next_WP, _groundspeed_vector);
 		//prefer_turn_into_wind(Nu2);
 
@@ -359,7 +364,7 @@ void AP_L1_Control::update_waypoint(const struct Location &prev_WP, const struct
 		Nu = Nu1 + Nu2;
 		_nav_bearing = atan2f(AB.y, AB.x) + Nu1; // bearing (radians) from AC to L1 point		
 
-		Debug("Nu2 %.1f, Nu1 %.1f, Nu %.1f", degrees(Nu2), degrees(Nu1), degrees(Nu));
+//		Debug("Nu2 %.1f, Nu1 %.1f, Nu %.1f", degrees(Nu2), degrees(Nu1), degrees(Nu));
 	}
 
     _prevent_indecision(Nu);
