@@ -1024,6 +1024,8 @@ const AP_Param::Info Plane::var_info[] = {
     GOBJECT(rangefinder,            "RNGFND", RangeFinder),
 #endif
 
+    GSCALAR(test, "TEST",                 0),
+
     // @Param: RNGFND_LANDING
     // @DisplayName: Enable rangefinder for landing
     // @Description: This enables the use of a rangefinder for automatic landing. The rangefinder will be used both on the landing approach and for final flare
