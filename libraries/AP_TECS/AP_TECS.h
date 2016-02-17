@@ -109,6 +109,9 @@ public:
         _pitch_max_limit = pitch_limit;
     }
     
+    // current time constant
+    float timeConstant(void) const;
+
     // this supports the TECS_* user settable parameters
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -345,8 +348,6 @@ private:
     // declares a 5point average filter using floats
     AverageFilterFloat_Size5 _vdot_filter;
 
-    // current time constant
-    float timeConstant(void) const;
 };
 
 #define TECS_LOG_FORMAT(msg) { msg, sizeof(AP_TECS::log_TECS_Tuning),	\
