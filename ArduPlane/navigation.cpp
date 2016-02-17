@@ -143,7 +143,8 @@ void Plane::calc_airspeed_errors()
     airspeed_error = SpdHgt_Controller->get_target_airspeed() - airspeed_measured_cm * 0.01f;
 }
 
-void Plane::calc_gndspeed_undershoot()
+
+void Plane::calc_gndspeed_undershoot() // 10 hz
 {
  	// Use the component of ground speed in the forward direction
 	// This prevents flyaway if wind takes plane backwards
@@ -153,8 +154,42 @@ void Plane::calc_gndspeed_undershoot()
 		Vector2f yawVect = Vector2f(rotMat.a.x,rotMat.b.x);
 		yawVect.normalize();
 		float gndSpdFwd = yawVect * gndVel;
-        groundspeed_undershoot = (g.min_gndspeed_cm > 0) ? (g.min_gndspeed_cm - gndSpdFwd*100) : 0;
+
+
+        if (g.min_gndspeed_cm > 0) {
+            // to avoid going in and out of a forced increased airspeed
+            // due to strong head-wind/low ground speed, which causes step
+            // inputs to the throttle, its better to peak hold the airspeed
+            // then decay back down. This smoothes out that transition.
+
+            uint32_t now = AP_HAL::millis();
+            float tconst = TECS_controller.timeConstant();
+            int32_t groundspeed_undershoot_new = g.min_gndspeed_cm - gndSpdFwd*100;
+
+            if (groundspeed_undershoot_new > groundspeed_undershoot) {
+                // start peak hold timer
+                groundspeed_undershoot = groundspeed_undershoot_new;
+                groundspeed_undershoot_timer_ms = now;
+
+            } else if (now - groundspeed_undershoot_timer_ms > tconst*1000) {
+                // after peak hold 1T of TECS_TCONST
+                if (groundspeed_undershoot > groundspeed_undershoot_new*1.02) {
+                    // decay groundspeed_undershoot over 3T until you get to within 2%
+                    const float dt = 0.1f;
+                    float a = dt / (3*tconst + dt);
+                    groundspeed_undershoot = (1-a)*groundspeed_undershoot + a*groundspeed_undershoot_new;
+                } else {
+                    // steady-state
+                    groundspeed_undershoot = groundspeed_undershoot_new;
+                }
+
+            }
+        } else {
+            groundspeed_undershoot = 0;
+        }
     }
+
+
 }
 
 void Plane::update_loiter(uint16_t radius)

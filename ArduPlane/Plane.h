@@ -376,8 +376,9 @@ private:
     uint8_t receiver_rssi;
 
     // Ground speed
-    // The amount current ground speed is below min ground speed.  Centimeters per second
+    // The amount current ground speed is below min ground speed.  Centimeters per second. Timer for peak hold
     int32_t groundspeed_undershoot;
+    uint32_t groundspeed_undershoot_timer_ms;
 
     // Difference between current altitude and desired altitude.  Centimeters
     int32_t altitude_error_cm;
