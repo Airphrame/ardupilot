@@ -50,6 +50,21 @@ bool AP_Airspeed_I2C::init()
     return false;
 }
 
+/*
+   detect if a airspeed sensor is connected. We'll detect by
+   trying to take a reading on I2C. If we get a result the sensor is
+   there.
+*/
+bool AP_Airspeed_I2C::detect(AP_Airspeed &_airspeed, uint8_t instance)
+{
+    uint8_t buff[2];
+    if (_airspeed._address[instance] == 0) {
+        return false;
+    }
+    return hal.i2c->read(_airspeed._address[instance], 4, &buff[0]) == 0;
+}
+
+
 // start a measurement
 void AP_Airspeed_I2C::_measure()
 {
