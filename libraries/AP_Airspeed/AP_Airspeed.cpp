@@ -70,50 +70,118 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
     // @DisplayName: Airspeed enable
     // @Description: enable airspeed sensor
     // @Values: 0:Disable,1:Enable
-    AP_GROUPINFO("ENABLE",    0, AP_Airspeed, _enable, 1),
+    AP_GROUPINFO("_ENABLE",    0, AP_Airspeed, _enable[0], 1),
 
     // @Param: USE
     // @DisplayName: Airspeed use
     // @Description: use airspeed for flight control
     // @Values: 1:Use,0:Don't Use
-    AP_GROUPINFO("USE",    1, AP_Airspeed, _use, 0),
+    AP_GROUPINFO("_USE",    1, AP_Airspeed, _use[0], 0),
 
     // @Param: OFFSET
     // @DisplayName: Airspeed offset
     // @Description: Airspeed calibration offset
     // @Increment: 0.1
-    AP_GROUPINFO("OFFSET", 2, AP_Airspeed, _offset, 0),
+    AP_GROUPINFO("_OFFSET", 2, AP_Airspeed, _offset[0], 0),
 
     // @Param: RATIO
     // @DisplayName: Airspeed ratio
     // @Description: Airspeed calibration ratio
     // @Increment: 0.1
-    AP_GROUPINFO("RATIO",  3, AP_Airspeed, _ratio, 1.9936f),
+    AP_GROUPINFO("_RATIO",  3, AP_Airspeed, _ratio[0], 1.9936f),
 
     // @Param: PIN
     // @DisplayName: Airspeed pin
     // @Description: The analog pin number that the airspeed sensor is connected to. Set this to 0..9 for the APM2 analog pins. Set to 64 on an APM1 for the dedicated airspeed port on the end of the board. Set to 11 on PX4 for the analog airspeed port. Set to 15 on the Pixhawk for the analog airspeed port. Set to 65 on the PX4 or Pixhawk for an EagleTree or MEAS I2C airspeed sensor.
     // @User: Advanced
-    AP_GROUPINFO("PIN",  4, AP_Airspeed, _pin, ARSPD_DEFAULT_PIN),
+    AP_GROUPINFO("_PIN",  4, AP_Airspeed, _pin[0], ARSPD_DEFAULT_PIN),
 
     // @Param: AUTOCAL
     // @DisplayName: Automatic airspeed ratio calibration
     // @Description: If this is enabled then the APM will automatically adjust the ARSPD_RATIO during flight, based upon an estimation filter using ground speed and true airspeed. The automatic calibration will save the new ratio to EEPROM every 2 minutes if it changes by more than 5%. This option should be enabled for a calibration flight then disabled again when calibration is complete. Leaving it enabled all the time is not recommended.
     // @User: Advanced
-    AP_GROUPINFO("AUTOCAL",  5, AP_Airspeed, _autocal, 0),
+    AP_GROUPINFO("_AUTOCAL",  5, AP_Airspeed, _autocal[0], 0),
 
     // @Param: TUBE_ORDER
     // @DisplayName: Control pitot tube order
     // @Description: This parameter allows you to control whether the order in which the tubes are attached to your pitot tube matters. If you set this to 0 then the top connector on the sensor needs to be the dynamic pressure. If set to 1 then the bottom connector needs to be the dynamic pressure. If set to 2 (the default) then the airspeed driver will accept either order. The reason you may wish to specify the order is it will allow your airspeed sensor to detect if the aircraft it receiving excessive pressure on the static port, which would otherwise be seen as a positive airspeed.
     // @User: Advanced
-    AP_GROUPINFO("TUBE_ORDER",  6, AP_Airspeed, _tube_order, 2),
+    AP_GROUPINFO("_TUBE_ORDER",  6, AP_Airspeed, _tube_order[0], 2),
 
     // @Param: SKIP_CAL
     // @DisplayName: Skip airspeed calibration on startup
     // @Description: This parameter allows you to skip airspeed offset calibration on startup, instead using the offset from the last calibration. This may be desirable if the offset variance between flights for your sensor is low and you want to avoid having to cover the pitot tube on each boot.
     // @Values: 0:Disable,1:Enable
     // @User: Advanced
-    AP_GROUPINFO("SKIP_CAL",  7, AP_Airspeed, _skip_cal, 0),
+    AP_GROUPINFO("_SKIP_CAL",  7, AP_Airspeed, _skip_cal[0], 0),
+
+    // @Param: _ADDR
+    // @DisplayName: I2C Bus address of sensor
+    // @Description: This sets the bus address of the sensor, where applicable. A value of 0 disables I2C for this sensor.
+    // @Range: 0 127
+    // @User: Standard
+    AP_GROUPINFO("_ADDR", 23, AP_Airspeed, _address[0], 0),
+
+    // 8..15 left for future expansion
+
+#if AIRSPEED_MAX_INSTANCES > 1
+
+    // @Param: ENABLE
+    // @DisplayName: Airspeed enable
+    // @Description: enable airspeed sensor
+    // @Values: 0:Disable,1:Enable
+    AP_GROUPINFO("2_ENABLE",    16, AP_Airspeed, _enable[1], 1),
+
+    // @Param: USE
+    // @DisplayName: Airspeed use
+    // @Description: use airspeed for flight control
+    // @Values: 1:Use,0:Don't Use
+    AP_GROUPINFO("2_USE",    17, AP_Airspeed, _use[1], 0),
+
+    // @Param: OFFSET
+    // @DisplayName: Airspeed offset
+    // @Description: Airspeed calibration offset
+    // @Increment: 0.1
+    AP_GROUPINFO("2_OFFSET", 18, AP_Airspeed, _offset[1], 0),
+
+    // @Param: RATIO
+    // @DisplayName: Airspeed ratio
+    // @Description: Airspeed calibration ratio
+    // @Increment: 0.1
+    AP_GROUPINFO("2_RATIO",  19, AP_Airspeed, _ratio[1], 1.9936f),
+
+    // @Param: PIN
+    // @DisplayName: Airspeed pin
+    // @Description: The analog pin number that the airspeed sensor is connected to. Set this to 0..9 for the APM2 analog pins. Set to 64 on an APM1 for the dedicated airspeed port on the end of the board. Set to 11 on PX4 for the analog airspeed port. Set to 15 on the Pixhawk for the analog airspeed port. Set to 65 on the PX4 or Pixhawk for an EagleTree or MEAS I2C airspeed sensor.
+    // @User: Advanced
+    AP_GROUPINFO("2_PIN",  20, AP_Airspeed, _pin[1], ARSPD_DEFAULT_PIN),
+
+    // @Param: AUTOCAL
+    // @DisplayName: Automatic airspeed ratio calibration
+    // @Description: If this is enabled then the APM will automatically adjust the ARSPD_RATIO during flight, based upon an estimation filter using ground speed and true airspeed. The automatic calibration will save the new ratio to EEPROM every 2 minutes if it changes by more than 5%. This option should be enabled for a calibration flight then disabled again when calibration is complete. Leaving it enabled all the time is not recommended.
+    // @User: Advanced
+    AP_GROUPINFO("2_AUTOCAL",  21, AP_Airspeed, _autocal[1], 0),
+
+    // @Param: TUBE_ORDER
+    // @DisplayName: Control pitot tube order
+    // @Description: This parameter allows you to control whether the order in which the tubes are attached to your pitot tube matters. If you set this to 0 then the top connector on the sensor needs to be the dynamic pressure. If set to 1 then the bottom connector needs to be the dynamic pressure. If set to 2 (the default) then the airspeed driver will accept either order. The reason you may wish to specify the order is it will allow your airspeed sensor to detect if the aircraft it receiving excessive pressure on the static port, which would otherwise be seen as a positive airspeed.
+    // @User: Advanced
+    AP_GROUPINFO("2_TUBE_ORDER",  22, AP_Airspeed, _tube_order[1], 2),
+
+    // @Param: SKIP_CAL
+    // @DisplayName: Skip airspeed calibration on startup
+    // @Description: This parameter allows you to skip airspeed offset calibration on startup, instead using the offset from the last calibration. This may be desirable if the offset variance between flights for your sensor is low and you want to avoid having to cover the pitot tube on each boot.
+    // @Values: 0:Disable,1:Enable
+    // @User: Advanced
+    AP_GROUPINFO("2_SKIP_CAL",  23, AP_Airspeed, _skip_cal[1], 0),
+
+    // @Param: _ADDR
+    // @DisplayName: I2C Bus address of sensor
+    // @Description: This sets the bus address of the sensor, where applicable. A value of 0 disables I2C for this sensor.
+    // @Range: 0 127
+    // @User: Standard
+    AP_GROUPINFO("2_ADDR", 23, AP_Airspeed, _address[1], 0),
+#endif
 
     AP_GROUPEND
 };
