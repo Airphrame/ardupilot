@@ -86,7 +86,7 @@ void Plane::accel_cal_update() {
 void Plane::read_airspeed(void)
 {
     if (airspeed.enabled()) {
-        airspeed.read();
+        airspeed.update();
         if (should_log(MASK_LOG_IMU)) {
             Log_Write_Airspeed();
         }
