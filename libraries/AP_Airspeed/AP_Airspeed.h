@@ -66,21 +66,21 @@ public:
 
     // The Airspeed_State structure is filled in by the backend driver
     struct Airspeed_State {
-        uint8_t                 instance;    // the instance number of this sensor
         float                   raw_airspeed;
         float                   airspeed;
         float                   pressure;
         float                   last_pressure;
         float                   raw_pressure;
         float                   EAS2TAS;
-        enum Airspeed_Status    status;     // sensor status
-        bool                    healthy:1;
-        bool                    hil_set:1;
-        uint32_t                last_update_ms;
         float                   hil_pressure;
         float                   last_saved_ratio;
         float                   temperature;
+        uint32_t                last_update_ms;
         uint8_t                 counter;
+        uint8_t                 instance;    // the instance number of this sensor
+        enum Airspeed_Status    status;     // sensor status
+        bool                    healthy:1;
+        bool                    hil_set:1;
     };
 
     AP_Float        _offset[AIRSPEED_MAX_INSTANCES];
