@@ -80,7 +80,7 @@ int AP_Airspeed_PX4::open_driver(void)
 /*
    see if the PX4 driver is available
 */
-bool AP_Airspeed_PX4::detect(AP_Airspeed &_frontend, uint8_t instance)
+bool AP_Airspeed_PX4::detect(AP_Airspeed &frontend, uint8_t instance)
 {
     int fd = open_driver();
     if (fd == -1) {

@@ -43,7 +43,6 @@ AP_Airspeed_Analog::AP_Airspeed_Analog(AP_Airspeed &_frontend, uint8_t instance,
         state.status = AP_Airspeed::Airspeed_NotConnected;
         return;
     }
-    _source = hal.analogin->channel(frontend._pin[instance]);
     state.status = AP_Airspeed::Airspeed_NoData;
 }
 
@@ -57,12 +56,12 @@ void AP_Airspeed_Analog::update()
     state.pressure = _source->voltage_average_ratiometric() * VOLTS_TO_PASCAL;
 }
 
-bool AP_Airspeed_Analog::detect(AP_Airspeed &_airspeed, uint8_t instance)
+bool AP_Airspeed_Analog::detect(AP_Airspeed &frontend, uint8_t instance)
 {
     return true;
 
-//    if (frontend._pin[instance] != -1) {
-//        return true;
-//    }
-//    return false;
+    if (frontend._pin[instance] != -1) {
+        return true;
+    }
+    return false;
 }

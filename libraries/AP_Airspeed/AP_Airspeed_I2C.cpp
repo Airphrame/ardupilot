@@ -29,6 +29,8 @@ extern const AP_HAL::HAL &hal;
 // probe and initialise the sensor
 AP_Airspeed_I2C::AP_Airspeed_I2C(AP_Airspeed &_frontend, uint8_t instance, AP_Airspeed::Airspeed_State &_state) :
     AP_Airspeed_Backend(_frontend, instance, _state)
+    , _last_sample_time_ms(0)
+    ,_measurement_started_ms(0)
 {
     // get pointer to i2c bus semaphore
     AP_HAL::Semaphore* i2c_sem = hal.i2c->get_semaphore();
@@ -55,13 +57,13 @@ AP_Airspeed_I2C::AP_Airspeed_I2C(AP_Airspeed &_frontend, uint8_t instance, AP_Ai
    trying to take a reading on I2C. If we get a result the sensor is
    there.
 */
-bool AP_Airspeed_I2C::detect(AP_Airspeed &_airspeed, uint8_t instance)
+bool AP_Airspeed_I2C::detect(AP_Airspeed &frontend, uint8_t instance)
 {
     uint8_t buff[2];
-    if (_airspeed._address[instance] == 0) {
+    if (frontend._address[instance] == 0) {
         return false;
     }
-    return hal.i2c->read(_airspeed._address[instance], 4, &buff[0]) == 0;
+    return hal.i2c->read(frontend._address[instance], 4, &buff[0]) == 0;
 }
 
 // start a measurement
