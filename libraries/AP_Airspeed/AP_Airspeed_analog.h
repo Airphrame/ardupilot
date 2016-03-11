@@ -12,9 +12,6 @@ public:
     // constructor
     AP_Airspeed_Analog(AP_Airspeed &_frontend, uint8_t instance, AP_Airspeed::Airspeed_State &_state);
 
-    // destructor
-    ~AP_Airspeed_Analog(void);
-
     // static detection function
     static bool detect(AP_Airspeed &frontend, uint8_t instance);
 
