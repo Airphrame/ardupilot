@@ -21,7 +21,6 @@
 #pragma once
 
 #include <AP_HAL/AP_HAL.h>
-
 #include "Airspeed_Backend.h"
 
 class AP_Airspeed_I2C : public AP_Airspeed_Backend

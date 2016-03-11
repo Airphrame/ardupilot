@@ -21,6 +21,8 @@
 #pragma once
 
 #include <AP_HAL/AP_HAL.h>
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4  || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+
 #include "Airspeed_Backend.h"
 
 class AP_Airspeed_PX4 : public AP_Airspeed_Backend {
@@ -57,3 +59,6 @@ private:
     // try to open the PX4 driver and return its fd
     static int open_driver(void);
 };
+
+#endif // CONFIG_HAL_BOARD
+
