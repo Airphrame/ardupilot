@@ -24,6 +24,8 @@
 
 #include "AP_Airspeed_PX4.h"
 
+uint8_t AP_Airspeed_PX4::num_px4_instances = 0;
+
 #include <drivers/drv_airspeed.h>
 #include <uORB/topics/differential_pressure.h>
 #include <sys/types.h>
@@ -33,24 +35,67 @@
 
 extern const AP_HAL::HAL &hal;
 
-bool AP_Airspeed_PX4::init()
+AP_Airspeed_PX4::AP_Airspeed_PX4(AP_Airspeed &_frontend, uint8_t instance, AP_Airspeed::Airspeed_State &_state) :
+    AP_Airspeed_Backend(_frontend, instance, _state)
 {
-    _fd = open(AIRSPEED0_DEVICE_PATH, O_RDONLY);
+    _fd = open_driver();
+
+    // consider this path used up
+    num_px4_instances++;
+
     if (_fd == -1) {
-        return false;
+        hal.console->printf("Unable to open PX4 airspeed sensor %u\n", num_px4_instances);
+        state.status = AP_Airspeed::Airspeed_NotConnected;
+        return;
     }
+
     if (OK != ioctl(_fd, SENSORIOCSPOLLRATE, 100) ||
         OK != ioctl(_fd, SENSORIOCSQUEUEDEPTH, 15)) {
         hal.console->println("Failed to setup airspeed driver rate and queue");
+        return;
     }
+}
+
+/*
+   close the file descriptor
+*/
+AP_Airspeed_PX4::~AP_Airspeed_PX4()
+{
+    if (_fd != -1) {
+        close(_fd);
+    }
+}
+
+/*
+   open the PX4 driver, returning the file descriptor
+*/
+int AP_Airspeed_PX4::open_driver(void)
+{
+    // work out the device path based on how many PX4 drivers we have loaded
+    char path[] = AIRSPEED_BASE_DEVICE_PATH "n";
+    path[strlen(path)-1] = '0' + num_px4_instances;
+    return open(path, O_RDONLY);
+}
+
+/*
+   see if the PX4 driver is available
+*/
+bool AP_Airspeed_PX4::detect(AP_Airspeed &_frontend, uint8_t instance)
+{
+    int fd = open_driver();
+    if (fd == -1) {
+        return false;
+    }
+    close(fd);
     return true;
 }
 
 // read the airspeed sensor
-bool AP_Airspeed_PX4::get_differential_pressure(float &pressure)
+void AP_Airspeed_PX4::update(void)
 {
     if (_fd == -1) {
-        return false;
+        state.status = AP_Airspeed::Airspeed_NotConnected;
+        return;
     }
 
     // read from the PX4 airspeed sensor
@@ -67,23 +112,16 @@ bool AP_Airspeed_PX4::get_differential_pressure(float &pressure)
         _last_timestamp = report.timestamp;
     }
     if (count == 0) {
-        return false;
+        return;
     }
-    pressure = psum / count;
-    _temperature = tsum / count;
-    return true;
-}
 
-// read the temperature
-bool AP_Airspeed_PX4::get_temperature(float &temperature)
-{
-    if (_temperature < -80) {
+    state.pressure = psum / count;
+
+    if (state.temperature < -80) {
         // almost certainly a bad reading. The ETS driver on PX4
         // returns -1000
-        return false;
+        state.temperature = tsum / count;
     }
-    temperature = _temperature;
-    return true;
 }
 
 #endif // CONFIG_HAL_BOARD

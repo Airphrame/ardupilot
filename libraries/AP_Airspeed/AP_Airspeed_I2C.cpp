@@ -26,17 +26,17 @@
 
 extern const AP_HAL::HAL &hal;
 
-#define I2C_ADDRESS_MS4525DO 0x28
-
 // probe and initialise the sensor
-bool AP_Airspeed_I2C::init()
+AP_Airspeed_I2C::AP_Airspeed_I2C(AP_Airspeed &_frontend, uint8_t instance, AP_Airspeed::Airspeed_State &_state) :
+    AP_Airspeed_Backend(_frontend, instance, _state)
 {
     // get pointer to i2c bus semaphore
     AP_HAL::Semaphore* i2c_sem = hal.i2c->get_semaphore();
 
     // take i2c bus sempahore
     if (!i2c_sem->take(200)) {
-        return false;
+        hal.console->printf("Unable to access I2C airspeed sensor bus\n");
+        state.status = AP_Airspeed::Airspeed_NotConnected;
     }
 
     _measure();
@@ -45,9 +45,9 @@ bool AP_Airspeed_I2C::init()
     i2c_sem->give();
     if (_last_sample_time_ms != 0) {
         hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_Airspeed_I2C::_timer, void));
-        return true;
+        hal.console->printf("Unable to start I2C airspeed sensor thread\n");
+        state.status = AP_Airspeed::Airspeed_NoData;
     }
-    return false;
 }
 
 /*
@@ -63,7 +63,6 @@ bool AP_Airspeed_I2C::detect(AP_Airspeed &_airspeed, uint8_t instance)
     }
     return hal.i2c->read(_airspeed._address[instance], 4, &buff[0]) == 0;
 }
-
 
 // start a measurement
 void AP_Airspeed_I2C::_measure()
@@ -81,7 +80,7 @@ void AP_Airspeed_I2C::_collect()
 
     _measurement_started_ms = 0;
 
-    if (hal.i2c->read(I2C_ADDRESS_MS4525DO, 4, data) != 0) {
+    if (hal.i2c->read(frontend._address[state.instance], 4, data) != 0) {
         return;
     }
 
@@ -109,8 +108,9 @@ void AP_Airspeed_I2C::_collect()
      */
     float diff_press_PSI = -((dp_raw - 0.1f*16383) * (P_max-P_min)/(0.8f*16383) + P_min);
 
-    _pressure = diff_press_PSI * PSI_to_Pa;
-    _temperature = ((200.0f * dT_raw) / 2047) - 50;
+    state.pressure = diff_press_PSI * PSI_to_Pa;
+    state.temperature = ((200.0f * dT_raw) / 2047) - 50;
+    state.status = AP_Airspeed::Airspeed_Good;
 
     _last_sample_time_ms = AP_HAL::millis();
 }
@@ -137,22 +137,3 @@ void AP_Airspeed_I2C::_timer()
     i2c_sem->give();
 }
 
-// return the current differential_pressure in Pascal
-bool AP_Airspeed_I2C::get_differential_pressure(float &pressure)
-{
-    if ((AP_HAL::millis() - _last_sample_time_ms) > 100) {
-        return false;
-    }
-    pressure = _pressure;
-    return true;
-}
-
-// return the current temperature in degrees C, if available
-bool AP_Airspeed_I2C::get_temperature(float &temperature)
-{
-    if ((AP_HAL::millis() - _last_sample_time_ms) > 100) {
-        return false;
-    }
-    temperature = _temperature;
-    return true;
-}

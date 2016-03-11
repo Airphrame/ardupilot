@@ -17,11 +17,14 @@
  *   APM_Airspeed.cpp - airspeed (pitot) driver
  */
 #include "AP_Airspeed.h"
+#include "AP_Airspeed_Analog.h"
+#include "AP_Airspeed_PX4.h"
+#include "AP_Airspeed_I2C.h"
 
-#include <AP_ADC/AP_ADC.h>
-#include <AP_Common/AP_Common.h>
-#include <AP_HAL/AP_HAL.h>
-#include <AP_Math/AP_Math.h>
+//#include <AP_ADC/AP_ADC.h>
+//#include <AP_Common/AP_Common.h>
+//#include <AP_HAL/AP_HAL.h>
+//#include <AP_Math/AP_Math.h>
 
 extern const AP_HAL::HAL &hal;
 
@@ -120,7 +123,7 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
     // @Description: This sets the bus address of the sensor, where applicable. A value of 0 disables I2C for this sensor.
     // @Range: 0 127
     // @User: Standard
-    AP_GROUPINFO("_ADDR", 8, AP_Airspeed, _address[0], 0),
+    AP_GROUPINFO("_ADDR", 8, AP_Airspeed, _address[0], I2C_ADDRESS_MS4525DO),
 
     // @Param: _TYPE
     // @DisplayName: Airspeed type
@@ -187,7 +190,7 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
     // @Description: This sets the bus address of the sensor, where applicable. A value of 0 disables I2C for this sensor.
     // @Range: 0 127
     // @User: Standard
-    AP_GROUPINFO("2_ADDR", 23, AP_Airspeed, _address[1], 0),
+    AP_GROUPINFO("2_ADDR", 23, AP_Airspeed, _address[1], I2C_ADDRESS_MS4525DO),
 
     // @Param: 2_TYPE
     // @DisplayName: Airspeed type
@@ -216,10 +219,9 @@ AP_Airspeed::AP_Airspeed(const AP_Vehicle::FixedWing &parms)
     memset(state,0,sizeof(state));
     memset(drivers,0,sizeof(drivers));
 
-    for (uint8_t i; i<AIRSPEED_MAX_INSTANCES; i++) {
+    for (uint8_t i=0; i<AIRSPEED_MAX_INSTANCES; i++) {
         state[i].EAS2TAS = 1.0f;
-        _calibration[i] = parms;
-        analog[i] = _pin[i];
+        //_calibration[i] = new Airspeed_Calibration(parms);
     }
 };
 
@@ -230,14 +232,6 @@ void AP_Airspeed::init()
         return;
     }
 
-//    _last_pressure = 0;
-//    _calibration.init(_ratio);
-//    _last_saved_ratio = _ratio;
-//    _counter = 0;
-//
-//    analog.init();
-//    digital.init();
-
     for (uint8_t i=0; i<AIRSPEED_MAX_INSTANCES; i++) {
         detect_instance(i);
         if (drivers[i] != NULL) {
@@ -247,12 +241,9 @@ void AP_Airspeed::init()
         }
 
         state[i].last_pressure = 0;
-        _calibration[i].init(_ratio[i]);
+        //_calibration[i].init(_ratio[i]);
         state[i].last_saved_ratio = _ratio[i];
         state[i].counter = 0;
-
-        analog[i].init();
-        digital[i].init();
 
         // initialise status
         state[i].status = Airspeed_Status::Airspeed_NotConnected;
@@ -270,9 +261,9 @@ void AP_Airspeed::detect_instance(uint8_t instance)
     if (type == Airspeed_TYPE_ANALOG) {
         // note that analog must be the last to be checked, as it will
         // always come back as present if the pin is valid
-        if (AP_Airspeed_analog::detect(*this, instance)) {
+        if (AP_Airspeed_Analog::detect(*this, instance)) {
             state[instance].instance = instance;
-            drivers[instance] = new AP_Airspeed_analog(*this, instance, state[instance]);
+            drivers[instance] = new AP_Airspeed_Analog(*this, instance, state[instance]);
             return;
         }
     }
@@ -302,45 +293,46 @@ float AP_Airspeed::get_pressure(uint8_t instance)
         state[instance].healthy = true;
         return state[instance].hil_pressure;
     }
-    float pressure = 0;
-    if (_pin[instance] == AP_AIRSPEED_I2C_PIN) {
-        state[instance].healthy = digital[instance].get_differential_pressure(pressure);
-    } else {
-        state[instance].healthy = analog[instance].get_differential_pressure(pressure);
-    }
-    return pressure;
+//    float pressure = 0;
+//    if (_pin[instance] == AP_AIRSPEED_I2C_PIN) {
+//        state[instance].healthy = digital[instance].get_differential_pressure(pressure);
+//    } else {
+//        state[instance].healthy = analog[instance].get_differential_pressure(pressure);
+//    }
+    return state[instance].pressure;
 }
 
 // get a temperature reading if possible
-bool AP_Airspeed::get_temperature(float &temperature)
+bool AP_Airspeed::get_temperature(uint8_t instance, float &temperature)
 {
     if (!_enable) {
         return false;
     }
-    if (_pin == AP_AIRSPEED_I2C_PIN) {
-        return digital.get_temperature(temperature);
+
+    if (drivers[instance]->get_temperature(temperature)) {
+        return true;
     }
     return false;
 }
 
 // calibrate the airspeed. This must be called at least once before
 // the get_airspeed() interface can be used
-void AP_Airspeed::calibrate(bool in_startup)
+void AP_Airspeed::calibrate(uint8_t instance, bool in_startup)
 {
     float sum = 0;
     uint8_t count = 0;
-    if (!_enable) {
+    if (!_enable[instance]) {
         return;
     }
-    if (in_startup && _skip_cal) {
+    if (in_startup && _skip_cal[instance]) {
         return;
     }
     // discard first reading
-    get_pressure();
+    get_pressure(instance);
     for (uint8_t i = 0; i < 10; i++) {
         hal.scheduler->delay(100);
-        float p = get_pressure();
-        if (_healthy) {
+        float p = get_pressure(instance);
+        if (state[instance].healthy) {
             sum += p;
             count++;
         }
@@ -348,32 +340,57 @@ void AP_Airspeed::calibrate(bool in_startup)
     if (count == 0) {
         // unhealthy sensor
         hal.console->println("Airspeed sensor unhealthy");
-        _offset.set(0);
+        _offset[instance].set(0);
         return;
     }
     float raw = sum/count;
-    _offset.set_and_save(raw);
-    _airspeed = 0;
-    _raw_airspeed = 0;
+    _offset[instance].set_and_save(raw);
+    state[instance].airspeed = 0;
+    state[instance].raw_airspeed = 0;
 }
 
-// read the airspeed sensor
-void AP_Airspeed::read(void)
+
+/*
+  update Airspeed state for all instances.
+ */
+void AP_Airspeed::update(void)
+{
+    for (uint8_t i=0; i<num_instances; i++) {
+        if (drivers[i] != NULL) {
+            if (_type[i] == AP_Airspeed::Airspeed_TYPE_NONE) {
+                // allow user to disable a rangefinder at runtime
+                state[i].status = AP_Airspeed::Airspeed_NotConnected;
+                continue;
+            }
+            drivers[i]->update();
+            process_raw_data(i);
+        }
+    }
+
+    // work out primary instance - first sensor returning good data
+    for (int8_t i=num_instances-1; i>=0; i--) {
+        if (drivers[i] != NULL && (state[i].status == AP_Airspeed::Airspeed_Good)) {
+            primary_instance = i;
+        }
+    }
+}
+
+void AP_Airspeed::process_raw_data(uint8_t instance)
 {
     float airspeed_pressure;
-    if (!_enable) {
+    if (!_enable[instance]) {
         return;
     }
-    airspeed_pressure = get_pressure() - _offset;
+    airspeed_pressure = get_pressure(instance) - _offset[instance];
 
     // remember raw pressure for logging
-    _raw_pressure     = airspeed_pressure;
+    state[instance].raw_pressure     = airspeed_pressure;
 
     /*
       we support different pitot tube setups so used can choose if
       they want to be able to detect pressure on the static port
      */
-    switch ((enum pitot_tube_order)_tube_order.get()) {
+    switch ((enum pitot_tube_order)_tube_order[instance].get()) {
     case PITOT_TUBE_ORDER_NEGATIVE:
         airspeed_pressure = -airspeed_pressure;
         // no break
@@ -381,7 +398,7 @@ void AP_Airspeed::read(void)
         if (airspeed_pressure < -32) {
             // we're reading more than about -8m/s. The user probably has
             // the ports the wrong way around
-            _healthy = false;
+            state[instance].healthy = false;
         }
         break;
     case PITOT_TUBE_ORDER_AUTO:
@@ -389,11 +406,11 @@ void AP_Airspeed::read(void)
         airspeed_pressure = fabsf(airspeed_pressure);
         break;
     }
-    airspeed_pressure       = MAX(airspeed_pressure, 0);
-    _last_pressure          = airspeed_pressure;
-    _raw_airspeed           = sqrtf(airspeed_pressure * _ratio);
-    _airspeed               = 0.7f * _airspeed  +  0.3f * _raw_airspeed;
-    _last_update_ms         = AP_HAL::millis();
+    airspeed_pressure               = MAX(airspeed_pressure, 0);
+    state[instance].last_pressure   = airspeed_pressure;
+    state[instance].raw_airspeed    = sqrtf(airspeed_pressure * _ratio[instance]);
+    state[instance].airspeed        = 0.7f *  state[instance].airspeed  +  0.3f * state[instance].raw_airspeed;
+    state[instance].last_update_ms  = AP_HAL::millis();
 }
 
 void AP_Airspeed::setHIL(float airspeed, float diff_pressure, float temperature)

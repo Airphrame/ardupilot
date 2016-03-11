@@ -22,26 +22,36 @@
 
 #include <AP_HAL/AP_HAL.h>
 
-#include "AP_Airspeed_Backend.h"
+#include "Airspeed_Backend.h"
 
 class AP_Airspeed_I2C : public AP_Airspeed_Backend
 {
 public:
-    // probe and initialise the sensor
-    bool init();
+    // constructor
+    AP_Airspeed_I2C(AP_Airspeed &_frontend, uint8_t instance, AP_Airspeed::Airspeed_State &_state);
 
-    // return the current differential_pressure in Pascal
-    bool get_differential_pressure(float &pressure);
+    // destructor
+    ~AP_Airspeed_I2C(void);
 
-    // return the current temperature in degrees C, if available
-    bool get_temperature(float &temperature);
+    // static detection function
+    static bool detect(AP_Airspeed &frontend, uint8_t instance);
+
+    // update state
+    void update(void) { }
+
+    bool get_temperature(float &temperature)
+    {
+        if (state.status == AP_Airspeed::Airspeed_Good) {
+            temperature = state.temperature;
+            return true;
+        }
+        return false;
+    }
 
 private:
     void _measure();
     void _collect();
     void _timer();
-    float _temperature;
-    float _pressure;
     uint32_t _last_sample_time_ms;
     uint32_t _measurement_started_ms;
 };

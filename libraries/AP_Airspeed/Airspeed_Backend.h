@@ -19,13 +19,13 @@
 
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
-#include "Airspeed.h"
+#include "AP_Airspeed.h"
 
 class AP_Airspeed_Backend
 {
 public:
     // constructor. This incorporates initialization as well.
-	AP_Airspeed_Backend(AP_Airspeed &_airspeed, uint8_t instance, AP_Airspeed::Airspeed_State &_state);
+    AP_Airspeed_Backend(AP_Airspeed &_frontend, uint8_t instance, AP_Airspeed::Airspeed_State &_state);
 
     // we declare a virtual destructor so that Airspeed drivers can
     // override with a custom destructor if need be
@@ -34,12 +34,11 @@ public:
     // update the state structure
     virtual void update() = 0;
 
+    // not all devices can read temp
+    virtual bool get_temperature(float &temperature) = 0;
+
 protected:
-
-    // update status
-    void update_status();
-
-    AP_Airspeed &airspeed;
+    AP_Airspeed &frontend;
     AP_Airspeed::Airspeed_State &state;
 };
 #endif // __AP_AIRSPEED_BACKEND_H__

@@ -4,17 +4,23 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
 
-#include "AP_Airspeed_Backend.h"
+#include "Airspeed_Backend.h"
 
 class AP_Airspeed_Analog : public AP_Airspeed_Backend
 {
 public:
-    AP_Airspeed_Analog(AP_Airspeed &_airspeed, uint8_t instance, AP_Airspeed::Airspeed_State &_state);
+    // constructor
+    AP_Airspeed_Analog(AP_Airspeed &_frontend, uint8_t instance, AP_Airspeed::Airspeed_State &_state);
 
-    // return the current differential_pressure in Pascal
-    bool get_differential_pressure(float &pressure);
+    // destructor
+    ~AP_Airspeed_Analog(void);
 
-    // temperature not available via analog backend
+    // static detection function
+    static bool detect(AP_Airspeed &frontend, uint8_t instance);
+
+    // update state
+    void update(void);
+
     bool get_temperature(float &temperature) { return false; }
 
 private:

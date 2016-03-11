@@ -34,34 +34,35 @@ extern const AP_HAL::HAL &hal;
    constructor is not called until detect() returns true, so we
    already know that we should setup the rangefinder
 */
-AP_Airspeed_Analog::AP_Airspeed_Analog(AP_Airspeed &_airspeed, uint8_t instance, AP_Airspeed::Airspeed_State &_state) :
-    AP_Airspeed_Backend(_airspeed, instance, _state)
+AP_Airspeed_Analog::AP_Airspeed_Analog(AP_Airspeed &_frontend, uint8_t instance, AP_Airspeed::Airspeed_State &_state) :
+    AP_Airspeed_Backend(_frontend, instance, _state)
 {
-    _source = hal.analogin->channel(_airspeed._pin[instance]);
+    _source = hal.analogin->channel(frontend._pin[instance]);
     if (_source == NULL) {
         // failed to allocate a ADC channel? This shouldn't happen
-        state[instance].status = AP_Airspeed::Airspeed_NotConnected;
+        state.status = AP_Airspeed::Airspeed_NotConnected;
         return;
     }
-    _source = hal.analogin->channel(_airspeed._pin[instance]);
-    set_status(AP_Airspeed::Airspeed_NoData);
+    _source = hal.analogin->channel(frontend._pin[instance]);
+    state.status = AP_Airspeed::Airspeed_NoData;
 }
 
 // read the airspeed sensor
-bool AP_Airspeed_Analog::get_differential_pressure(float &pressure)
+void AP_Airspeed_Analog::update()
 {
     if (_source == NULL) {
-        return false;
+        return;
     }
-    _source->set_pin(_pin);
-    pressure = _source->voltage_average_ratiometric() * VOLTS_TO_PASCAL;
-    return true;
+    _source->set_pin(frontend._pin[state.instance]);
+    state.pressure = _source->voltage_average_ratiometric() * VOLTS_TO_PASCAL;
 }
 
-bool AP_Airspeed_Analog::detect(AP_Airspeed &_airspeed, uint8_t instance, AP_Airspeed::Airspeed_State state)
+bool AP_Airspeed_Analog::detect(AP_Airspeed &_airspeed, uint8_t instance)
 {
-    if (_airspeed[instance].pin != -1) {
-        return true;
-    }
-    return false;
+    return true;
+
+//    if (frontend._pin[instance] != -1) {
+//        return true;
+//    }
+//    return false;
 }

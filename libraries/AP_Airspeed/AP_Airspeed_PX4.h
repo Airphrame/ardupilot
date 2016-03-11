@@ -21,24 +21,39 @@
 #pragma once
 
 #include <AP_HAL/AP_HAL.h>
-#include "AP_Airspeed_Backend.h"
+#include "Airspeed_Backend.h"
 
 class AP_Airspeed_PX4 : public AP_Airspeed_Backend {
 public:
     // constructor
-    AP_Airspeed_PX4() : _fd(-1) {}
+    AP_Airspeed_PX4(AP_Airspeed &_frontend, uint8_t instance, AP_Airspeed::Airspeed_State &_state);
 
-    // probe and initialise the sensor
-    bool init(void);
+    // destructor
+    ~AP_Airspeed_PX4(void);
 
-    // return the current differential_pressure in Pascal
-    bool get_differential_pressure(float &pressure);
+    // static detection function
+    static bool detect(AP_Airspeed &frontend, uint8_t instance);
 
-    // return the current temperature in degrees C, if available
-    bool get_temperature(float &temperature);
+    // update state
+    void update(void);
+
+    bool get_temperature(float &temperature)
+    {
+        if (state.status == AP_Airspeed::Airspeed_Good) {
+            temperature = state.temperature;
+            return true;
+        }
+        return false;
+    }
 
 private:
     int _fd;
     uint64_t _last_timestamp;
-    float _temperature;
+
+    // we need to keep track of how many PX4 drivers have been loaded
+    // so we can open the right device filename
+    static uint8_t num_px4_instances;
+
+    // try to open the PX4 driver and return its fd
+    static int open_driver(void);
 };

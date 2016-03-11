@@ -1,50 +1,46 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #pragma once
 
-#ifndef __AIRSPEED_H__
-#define __AIRSPEED_H__
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 
-#include "AP_Airspeed_Backend.h"
-#include "AP_Airspeed_I2C.h"
-#include "AP_Airspeed_PX4.h"
-#include "AP_Airspeed_analog.h"
-
 // Maximum number of Airspeed instances available on this platform
 #define AIRSPEED_MAX_INSTANCES 2
+#define I2C_ADDRESS_MS4525DO 0x28
+
+//class Airspeed_Calibration {
+//public:
+//    friend class AP_Airspeed;
+//    // constructor
+//    Airspeed_Calibration(const AP_Vehicle::FixedWing &parms);
+//
+//    // initialise the calibration
+//    void init(float initial_ratio);
+//
+//    // take current airspeed in m/s and ground speed vector and return
+//    // new scaling factor
+//    float update(float airspeed, const Vector3f &vg);
+//
+//private:
+//    // state of kalman filter for airspeed ratio estimation
+//    Matrix3f P; // covarience matrix
+//    const float Q0; // process noise matrix top left and middle element
+//    const float Q1; // process noise matrix bottom right element
+//    Vector3f state; // state vector
+//    const float DT; // time delta
+//    const AP_Vehicle::FixedWing &aparm;
+//};
 
 class AP_Airspeed_Backend;
- 
-class Airspeed_Calibration {
-public:
-    friend class AP_Airspeed;
-    // constructor
-    Airspeed_Calibration(const AP_Vehicle::FixedWing &parms);
-
-    // initialise the calibration
-    void init(float initial_ratio);
-
-    // take current airspeed in m/s and ground speed vector and return
-    // new scaling factor
-    float update(float airspeed, const Vector3f &vg);
-
-private:
-    // state of kalman filter for airspeed ratio estimation
-    Matrix3f P; // covarience matrix
-    const float Q0; // process noise matrix top left and middle element
-    const float Q1; // process noise matrix bottom right element
-    Vector3f state; // state vector
-    const float DT; // time delta
-    const AP_Vehicle::FixedWing &aparm;
-};
 
 class AP_Airspeed
 {
 public:
+    friend class AP_Airspeed_Backend;
+
     // constructor
     AP_Airspeed(const AP_Vehicle::FixedWing &parms);
 
@@ -83,6 +79,7 @@ public:
         uint32_t                last_update_ms;
         float                   hil_pressure;
         float                   last_saved_ratio;
+        float                   temperature;
         uint8_t                 counter;
     };
 
@@ -95,6 +92,8 @@ public:
     AP_Int8         _tube_order[AIRSPEED_MAX_INSTANCES];
     AP_Int8         _skip_cal[AIRSPEED_MAX_INSTANCES];
     AP_Int8         _type[AIRSPEED_MAX_INSTANCES];
+    AP_Int8         _address[AIRSPEED_MAX_INSTANCES];
+
 
 
     // Return the number of airspeed sensor instances
@@ -109,7 +108,12 @@ public:
 
     // calibrate the airspeed. This must be called on startup if the
     // altitude/climb_rate/acceleration interfaces are ever used
-    void calibrate(bool in_startup);
+    void calibrate(uint8_t instance, bool in_startup);
+    void calibrate(bool in_startup) {
+        for (uint8_t i=0; i<AIRSPEED_MAX_INSTANCES; i++) {
+            calibrate(i, in_startup);
+        }
+    }
 
       // return the current airspeed in m/s
       float get_airspeed(uint8_t instance) const {
@@ -141,12 +145,6 @@ public:
       }
       float get_airspeed_ratio(void) const {
           return get_airspeed_ratio(primary_instance);
-      }
-
-      // get temperature if available
-      bool get_temperature(uint8_t instance, float &temperature);
-      bool get_temperature(float &temperature) {
-          return get_temperature(primary_instance, temperature);
       }
 
       // set the airspeed ratio (dimensionless)
@@ -184,10 +182,16 @@ public:
       // return the differential pressure in Pascal for the last
       // airspeed reading. Used by the calibration code
       float get_differential_pressure(uint8_t instance) const {
-          return  state[instance].last_pressure;
+          return state[instance].last_pressure;
       }
       float get_differential_pressure(void) const {
           return get_differential_pressure(primary_instance);
+      }
+
+      // get temperature
+      bool get_temperature(uint8_t instance, float &temperature);
+      bool get_temperature(float &temperature) {
+          return get_temperature(primary_instance, temperature);
       }
 
       // return the current offset
@@ -217,7 +221,6 @@ public:
       // get the apparent to true airspeed ratio
       float get_EAS2TAS(uint8_t instance) const {
           return (instance<num_instances? state[instance].EAS2TAS : 0);
-
       }
       // get the apparent to true airspeed ratio
       float get_EAS2TAS(void) const {
@@ -262,30 +265,24 @@ public:
     }
 
     // return pressure
-    uint32_t get_pressure(uint8_t instance);
-    uint32_t get_pressure(void) {
+    float get_pressure(uint8_t instance);
+    float get_pressure(void) {
         return get_pressure(primary_instance);
     }
 
+    void process_raw_data(uint8_t instance);
+    void update(void);
 
     static const struct AP_Param::GroupInfo var_info[];
 
-
 private:
-    Airspeed_Calibration _calibration[AIRSPEED_MAX_INSTANCES];
+    //Airspeed_Calibration _calibration[AIRSPEED_MAX_INSTANCES];
     Airspeed_State state[AIRSPEED_MAX_INSTANCES];
     AP_Airspeed_Backend *drivers[AIRSPEED_MAX_INSTANCES];
     uint8_t primary_instance:3;
     uint8_t num_instances:3;
 
     void detect_instance(uint8_t instance);
-    void update_instance(uint8_t instance);  
 
-    AP_Airspeed_Analog analog[AIRSPEED_MAX_INSTANCES];
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-    AP_Airspeed_PX4    digital[AIRSPEED_MAX_INSTANCES];
-#else
-    AP_Airspeed_I2C    digital[AIRSPEED_MAX_INSTANCES];
-#endif
 };
-#endif // __AIRSPEED_H__
+
