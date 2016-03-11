@@ -268,12 +268,13 @@ void AP_Airspeed::detect_instance(uint8_t instance)
         }
     }
     if (type == Airspeed_TYPE_I2C) {
-        if (AP_Airspeed_PX4::detect(*this, instance)) {
+        if (AP_Airspeed_I2C::detect(*this, instance)) {
             state[instance].instance = instance;
             drivers[instance] = new AP_Airspeed_I2C(*this, instance, state[instance]);
             return;
         }
     }
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4  || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     if (type == Airspeed_TYPE_PX4) {
         if (AP_Airspeed_PX4::detect(*this, instance)) {
             state[instance].instance = instance;
@@ -281,6 +282,7 @@ void AP_Airspeed::detect_instance(uint8_t instance)
             return;
         }
     }
+#endif
 }
 
 // read the airspeed sensor
