@@ -17,7 +17,7 @@
  *   APM_Airspeed.cpp - airspeed (pitot) driver
  */
 #include "AP_Airspeed.h"
-#include "AP_Airspeed_Analog.h"
+#include "AP_Airspeed_analog.h"
 #include "AP_Airspeed_PX4.h"
 #include "AP_Airspeed_I2C.h"
 
