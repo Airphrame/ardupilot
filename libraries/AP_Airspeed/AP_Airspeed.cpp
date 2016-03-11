@@ -252,7 +252,7 @@ void AP_Airspeed::init()
 
 
 /*
-  detect if an instance of a rangefinder is connected.
+  detect if an instance of a sensor is connected.
  */
 void AP_Airspeed::detect_instance(uint8_t instance)
 {
@@ -358,7 +358,7 @@ void AP_Airspeed::update(void)
     for (uint8_t i=0; i<num_instances; i++) {
         if (drivers[i] != NULL) {
             if (_type[i] == AP_Airspeed::Airspeed_TYPE_NONE) {
-                // allow user to disable a rangefinder at runtime
+                // allow user to disable a sensor at runtime
                 state[i].status = AP_Airspeed::Airspeed_NotConnected;
                 continue;
             }

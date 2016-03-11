@@ -30,9 +30,9 @@ extern const AP_HAL::HAL &hal;
 #define VOLTS_TO_PASCAL 819
 
 /*
-   The constructor also initialises the rangefinder. Note that this
+   The constructor also initialises the sensor. Note that this
    constructor is not called until detect() returns true, so we
-   already know that we should setup the rangefinder
+   already know that we should setup the sensor
 */
 AP_Airspeed_Analog::AP_Airspeed_Analog(AP_Airspeed &_frontend, uint8_t instance, AP_Airspeed::Airspeed_State &_state) :
     AP_Airspeed_Backend(_frontend, instance, _state)

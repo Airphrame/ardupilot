@@ -56,7 +56,7 @@ public:
         Airspeed_Good
     };
 
-    // RangeFinder driver types
+    // Airspeed driver types
     enum Airspeed_Type {
         Airspeed_TYPE_NONE   = 0,
         Airspeed_TYPE_ANALOG = 1,
@@ -66,7 +66,7 @@ public:
 
     // The Airspeed_State structure is filled in by the backend driver
     struct Airspeed_State {
-        uint8_t                 instance;    // the instance number of this RangeFinder
+        uint8_t                 instance;    // the instance number of this sensor
         float                   raw_airspeed;
         float                   airspeed;
         float                   pressure;
