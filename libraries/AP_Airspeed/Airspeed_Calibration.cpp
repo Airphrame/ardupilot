@@ -108,12 +108,12 @@ extern const AP_HAL::HAL& hal;
 //    return state.z;
 //}
 //
-//
-///*
-//  called once a second to do calibration update
-// */
-//void AP_Airspeed::update_calibration(const Vector3f &vground)
-//{
+
+/*
+  called once a second to do calibration update
+ */
+void AP_Airspeed::update_calibration(const Vector3f &vground)
+{
 //    if (!_autocal) {
 //        // auto-calibration not enabled
 //        return;
@@ -149,11 +149,11 @@ extern const AP_HAL::HAL& hal;
 //    } else {
 //        _counter++;
 //    }
-//}
-//
-//// log airspeed calibration data to MAVLink
-//void AP_Airspeed::log_mavlink_send(mavlink_channel_t chan, const Vector3f &vground)
-//{
+}
+
+// log airspeed calibration data to MAVLink
+void AP_Airspeed::log_mavlink_send(mavlink_channel_t chan, const Vector3f &vground)
+{
 //    mavlink_msg_airspeed_autocal_send(chan,
 //                                      vground.x,
 //                                      vground.y,
@@ -167,4 +167,4 @@ extern const AP_HAL::HAL& hal;
 //                                      _calibration.P.a.x,
 //                                      _calibration.P.b.y,
 //                                      _calibration.P.c.z);
-//}
+}
