@@ -161,6 +161,13 @@ public:
         uint8_t target_state;
     };
 
+    // Rotate landing depending on wind. See MAV_CMD_DO_ROTATE_LANDING_DIR
+    struct PACKED Rotate_Landing_Command {
+        uint8_t action;     // see enum MAV_ROTATE_LANDING_DIR_ACTION
+        uint8_t type;       // see enum MAV_ROTATE_LANDING_DIR_TYPE
+        int16_t offset;     // axis of rotation offset in meters
+    };
+
      // navigation delay command structure
     struct PACKED Navigation_Delay_Command {
         float seconds; // period of delay in seconds
@@ -221,6 +228,9 @@ public:
         // do vtol transition
         Do_VTOL_Transition do_vtol_transition;
         
+        // rotate landing direction
+        Rotate_Landing_Command rotate_landing;
+
         // location
         Location location;      // Waypoint location
 
