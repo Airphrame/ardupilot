@@ -282,49 +282,8 @@ void GCS_MAVLINK::handle_mission_request(AP_Mission &mission, mavlink_message_t 
 {
     AP_Mission::Mission_Command cmd;
 
-    if (msg->msgid == MAVLINK_MSG_ID_MISSION_REQUEST_INT) {  
-        // decode
-        mavlink_mission_request_int_t packet;
-        mavlink_msg_mission_request_int_decode(msg, &packet);
 
-        // retrieve mission from eeprom
-        if (!mission.read_cmd_from_storage(packet.seq, cmd)) {
-            goto mission_item_send_failed;
-        }
 
-        mavlink_mission_item_int_t ret_packet;
-        memset(&ret_packet, 0, sizeof(ret_packet));
-        if (!AP_Mission::mission_cmd_to_mavlink_int(cmd, ret_packet)) {
-            goto mission_item_send_failed;
-        }
-
-        // set packet's current field to 1 if this is the command being executed
-        if (cmd.id == (uint16_t)mission.get_current_nav_cmd().index) {
-            ret_packet.current = 1;
-        } else {
-            ret_packet.current = 0;
-        }
-
-        // set auto continue to 1
-        ret_packet.autocontinue = 1;     // 1 (true), 0 (false)
-
-        /*
-          avoid the _send() function to save memory, as it avoids
-          the stack usage of the _send() function by using the already
-          declared ret_packet above
-         */
-        ret_packet.target_system = msg->sysid;
-        ret_packet.target_component = msg->compid;
-        ret_packet.seq = packet.seq;
-        ret_packet.command = cmd.id;
-
-        _mav_finalize_message_chan_send(chan, 
-                                        MAVLINK_MSG_ID_MISSION_ITEM_INT,
-                                        (const char *)&ret_packet,
-                                        MAVLINK_MSG_ID_MISSION_ITEM_MIN_LEN,
-                                        MAVLINK_MSG_ID_MISSION_ITEM_INT_LEN,
-                                        MAVLINK_MSG_ID_MISSION_ITEM_INT_CRC);
-    } else {
         // decode
         mavlink_mission_request_t packet;
         mavlink_msg_mission_request_decode(msg, &packet);
@@ -366,7 +325,7 @@ void GCS_MAVLINK::handle_mission_request(AP_Mission &mission, mavlink_message_t 
                                         MAVLINK_MSG_ID_MISSION_ITEM_MIN_LEN,
                                         MAVLINK_MSG_ID_MISSION_ITEM_LEN,
                                         MAVLINK_MSG_ID_MISSION_ITEM_CRC);
-    }
+
 
     return;
 
