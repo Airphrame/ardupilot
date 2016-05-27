@@ -440,6 +440,8 @@ void PX4RCOutput::_send_outputs(void)
 {
     uint32_t now = AP_HAL::micros();
 
+    force_safety_pending_requests();
+
     if ((_enabled_channels & ((1U<<_servo_count)-1)) == 0) {
         // no channels enabled
         _arm_actuators(false);
