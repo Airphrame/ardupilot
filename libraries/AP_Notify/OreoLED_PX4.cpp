@@ -17,8 +17,9 @@
  */
 
 #include <AP_HAL/AP_HAL.h>
+//#include "AP_Notify.h"
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 && AP_NOTIFY_OREOLED == 1
 #include "OreoLED_PX4.h"
 
 #include <sys/types.h>
@@ -30,8 +31,6 @@
 #include <drivers/drv_oreoled.h>
 #include <stdio.h>
 #include <errno.h>
-
-#include "AP_Notify.h"
 
 extern const AP_HAL::HAL& hal;
 

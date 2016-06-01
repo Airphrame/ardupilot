@@ -16,10 +16,11 @@
  */
 #pragma once
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 && AP_NOTIFY_OREOLED == 1
 
 #include <AP_HAL/AP_HAL.h>
 #include "NotifyDevice.h"
+
 #include <drivers/drv_oreoled.h>
 
 #define OREOLED_NUM_LEDS        4       // maximum number of individual LEDs connected to the oreo led cpu
@@ -90,5 +91,4 @@ private:
     oreo_state _state_sent[OREOLED_NUM_LEDS];       // last state sent to led
     uint8_t _pattern_override;                      // holds last processed pattern override, 0 if we are not overriding a pattern
 };
-
-#endif // CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#endif // CONFIG_HAL_BOARD == HAL_BOARD_PX4 && AP_NOTIFY_OREOLED == 1
