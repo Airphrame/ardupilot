@@ -56,7 +56,7 @@
 //
 
 #ifndef FRSKY_TELEM_ENABLED
-#define FRSKY_TELEM_ENABLED ENABLED
+#define FRSKY_TELEM_ENABLED DISABLED
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -229,7 +229,7 @@
 //
 // uses 1182 bytes of memory
 #ifndef CAMERA
- # define CAMERA         ENABLED
+ # define CAMERA         DISABLED
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -237,7 +237,7 @@
 //
 // uses 7726 bytes of memory on 2560 chips (all options are enabled)
 #ifndef MOUNT
-#define MOUNT          ENABLED
+#define MOUNT          DISABLED
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -378,12 +378,12 @@
 // use this to completely disable the CLI. We now default the CLI to
 // off on smaller boards.
 #ifndef CLI_ENABLED
-#define CLI_ENABLED ENABLED
+#define CLI_ENABLED DISABLED
 #endif
 
 // use this to disable geo-fencing
 #ifndef GEOFENCE_ENABLED
- # define GEOFENCE_ENABLED ENABLED
+ # define GEOFENCE_ENABLED DISABLED
 #endif
 
 // pwm value on FENCE_CHANNEL to use to enable fenced mode
@@ -407,10 +407,10 @@
 
 // OBC Failsafe enable
 #ifndef OBC_FAILSAFE
-#define OBC_FAILSAFE ENABLED
+#define OBC_FAILSAFE DISABLED
 #endif
 
-#define HIL_SUPPORT ENABLED
+#define HIL_SUPPORT DISABLED
 
 //////////////////////////////////////////////////////////////////////////////
 // Parachute release
