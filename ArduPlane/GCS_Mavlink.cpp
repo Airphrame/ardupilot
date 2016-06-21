@@ -1109,6 +1109,10 @@ GCS_MAVLINK_Plane::data_stream_send(void)
     if (stream_trigger(STREAM_ADSB)) {
         send_message(MSG_ADSB_VEHICLE);
     }
+
+    if (stream_trigger(STREAM_ADSB)) {
+        send_message(MSG_ADSB_VEHICLE);
+    }
 }
 
 
