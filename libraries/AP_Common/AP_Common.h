@@ -100,7 +100,7 @@ struct PACKED Location_Option_Flags {
     uint8_t unused1      : 1;           // unused flag (defined so that loiter_ccw uses the correct bit)
     uint8_t loiter_ccw   : 1;           // 0 if clockwise, 1 if counter clockwise
     uint8_t terrain_alt  : 1;           // this altitude is above terrain
-    uint8_t unused2      : 1;           // unused flag (defined so that loiter_xtrack uses the correct bit)
+    uint8_t origin_alt   : 1;           // this altitude is above ekf origin
     uint8_t loiter_xtrack : 1;          // 0 to crosstrack from center of waypoint, 1 to crosstrack from tangent exit location
 };
 
