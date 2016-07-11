@@ -1954,6 +1954,11 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
     case MAVLINK_MSG_ID_ADSB_VEHICLE:
         plane.adsb.update_vehicle(msg);
         break;
+
+    case MAVLINK_MSG_ID_ADSB_TRANSPONDER_DYNAMIC_OUTPUT:
+        plane.adsb.transceiver_report(chan, msg);
+        break;
+
     } // end switch
 } // end handle mavlink
 
