@@ -356,16 +356,24 @@ void SITL_State::_simulator_servos(Aircraft::sitl_input &input)
 
     // pass wind into simulators, using a wind gradient below 60m
     float altitude = _barometer?_barometer->get_altitude():0;
-    float wind_speed = _sitl->wind_speed;
+    float wind_speed = 0;
+    float wind_direction = 0;
+    if (_sitl) {
+        // The EKF does not like step inputs so this LPF keeps it happy.
+        wind_speed = _sitl->wind_speed_active = (0.95f*_sitl->wind_speed_active) + (0.05f*_sitl->wind_speed);
+        wind_direction = _sitl->wind_direction_active = (0.95f*_sitl->wind_direction_active) + (0.05f*_sitl->wind_direction);
+    }
+
     if (altitude < 0) {
         altitude = 0;
     }
     if (altitude < 60) {
-        wind_speed *= altitude / 60;
+		wind_speed *= sqrtf(MAX(altitude / 60, 0));
     }
+
     input.wind.speed = wind_speed;
-    input.wind.direction = _sitl->wind_direction;
-    input.wind.turbulence = _sitl->wind_turbulance;
+    input.wind.direction = wind_direction;
+    input.wind.turbulence = _sitl?_sitl->wind_turbulance:0;
 
     for (i=0; i<SITL_NUM_CHANNELS; i++) {
         if (pwm_output[i] == 0xFFFF) {
