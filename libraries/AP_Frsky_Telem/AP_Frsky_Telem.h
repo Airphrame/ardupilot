@@ -156,14 +156,14 @@ private:
     struct
     {
         uint8_t mav_type; // frame type (see MAV_TYPE in Mavlink definition file common.h)
-        AP_Float *fs_batt_voltage; // failsafe battery voltage in volts
-        AP_Float *fs_batt_mah; // failsafe reserve capacity in mAh
+        AP_Float *fs_batt_voltage = nullptr; // failsafe battery voltage in volts
+        AP_Float *fs_batt_mah = nullptr; // failsafe reserve capacity in mAh
     } _params;
     
     struct
     {
         uint8_t control_mode;
-        uint32_t *value;
+        uint32_t *value = nullptr;
         uint32_t sensor_status_flags;
     } _ap;
     
