@@ -58,6 +58,14 @@ public:
         AP_Param::setup_object_defaults(this, var_info);
     }
 
+    // stages of flight
+    enum LandingStage {
+        STAGE_UNKNOWN       = 0,
+        STAGE_APPROACH      = 4,
+        STAGE_PREFLARE      = 5,
+        STAGE_FINAL         = 6,
+    };
+
     enum Landing_Type {
         TYPE_STANDARD_GLIDE_SLOPE = 0,
 //      TODO: TYPE_DEEPSTALL,
@@ -93,6 +101,8 @@ public:
     bool is_commanded_go_around(void) const { return commanded_go_around; }
     bool is_complete(void) const { return complete; }
     void set_initial_slope() { initial_slope = slope; }
+    void set_stage(LandingStage _stage) { stage = _stage; }
+    LandingStage get_stage() const { return stage; }
 
 
 
@@ -124,6 +134,9 @@ private:
 
     // calculated approach slope during auto-landing: ((prev_WP_loc.alt - next_WP_loc.alt)*0.01f - flare_sec * sink_rate) / get_distance(prev_WP_loc, next_WP_loc)
     float slope;
+
+    // flight stages for landing
+    LandingStage stage;
 
     AP_Mission &mission;
     AP_AHRS &ahrs;
